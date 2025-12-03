@@ -1,10 +1,3 @@
-# DataEngineerFullstackTest
-
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
-
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
-
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/tutorials/react-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
 
 ## Run tasks
 
@@ -26,76 +19,75 @@ To see all available targets to run for a project, run:
 npx nx show project web
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+---
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## Event & Data Schema
 
-## Add new projects
+This section describes the simplified schema used for analytics and training data in this assignment.
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
+### User Identity
 
-Use the plugin's generator to create new projects.
+For this exercise we use a single hard-coded test user:
 
-To generate a new application, use:
+- **distinct_id**: `"test-user-1"`
 
-```sh
-npx nx g @nx/react:app demo
+In PostHog, this `distinct_id` maps to a "person" with the following property:
+
+- **email**: a test email address used for the marketing flow demo.
+
+> **Production note:**  
+> In a real system, `distinct_id` would be the authenticated user’s ID, and `email` would come from the user profile (e.g., from the session/JWT or a user service). We would not hard-code it, and we would not query the database solely for analytics; instead we would reuse user information that is already loaded for the request.
+
+### Frontend Events
+
+The React app emits two types of analytics events to PostHog.
+
+#### `feature_used` event
+
+Represents a successful usage of a product feature.
+
+- **Event name:** `feature_used`
+- **Properties:**
+  - `feature_name` (string): Name or label of the feature used, e.g. `"feature1"`.
+  - `source` (string, optional): Where the event originates, e.g. `"assignment_demo"`.
+
+All `feature_used` events are associated with the user via `distinct_id = "test-user-1"`.
+
+These events are used by PostHog to drive the marketing flow (e.g., "send an email after 5 uses").
+
+#### `generation_failed` event
+
+Represents a failure in an AI generation flow, which we want to capture for model training.
+
+- **Event name:** `generation_failed`
+- **Properties:**
+  - `failure_reason` (string): High-level reason for failure, e.g. `"timeout"`, `"validation_error"`.
+  - `input_prompt` (string): The original user prompt text that led to the failure.
+
+PostHog attaches its own event timestamp, so we do not send a custom timestamp from the frontend.
+
+These events are routed to the backend for sanitization and storage as training data.
+
+### Backend Training Data (JSONL)
+
+The NestJS backend receives `generation_failed` events via a PostHog webhook and transforms them into a canonical training record before writing them to a local JSON Lines file: `training_data.jsonl`.
+
+Each line in `training_data.jsonl` is a single JSON object with (at minimum) the following fields:
+
+- `user_id` (string): The PostHog `distinct_id`, e.g. `"test-user-1"`.
+- `failure_reason` (string): Copied from the event payload.
+- `input_prompt` (string): Sanitized prompt text (trimmed, ensured to be a string, and optionally filtered if empty).
+- `event_timestamp` (ISO 8601 string): When the event occurred (based on the timestamp from PostHog).
+- `ingested_at` (ISO 8601 string): When the backend wrote the record to the training file.
+
+Example JSONL line:
+
+```json
+{ 
+    "user_id":"test-user-1",
+    "failure_reason":"timeout",
+    "input_prompt":"Generate a floorplan for a 2-bedroom apartment",
+    "event_timestamp":"2025-12-03T11:45:00Z",
+    "ingested_at":"2025-12-03T11:45:02Z"
+}
 ```
-
-To generate a new library, use:
-
-```sh
-npx nx g @nx/react:lib mylib
-```
-
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
-
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Set up CI!
-
-### Step 1
-
-To connect to Nx Cloud, run the following command:
-
-```sh
-npx nx connect
-```
-
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
-
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Step 2
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
-```
-
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Install Nx Console
-
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Useful links
-
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/getting-started/tutorials/react-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
