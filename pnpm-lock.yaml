@@ -203,7 +203,11 @@ importers:
         specifier: ^11.0.0
         version: 11.1.9(@nestjs/common@11.1.9(reflect-metadata@0.1.14)(rxjs@7.8.1))(@nestjs/core@11.1.9)(@nestjs/platform-express@11.1.9)
 
-  apps/web: {}
+  apps/web:
+    dependencies:
+      posthog-js:
+        specifier: ^1.298.0
+        version: 1.298.0
 
 packages:
 

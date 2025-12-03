@@ -1,5 +1,8 @@
 {
   "name": "@data-engineer-fullstack-test/web",
   "version": "0.0.1",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "posthog-js": "^1.298.0"
+  }
 }
