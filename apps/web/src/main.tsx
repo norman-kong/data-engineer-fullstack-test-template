@@ -1,11 +1,11 @@
-import { StrictMode } from 'react';
+import posthog from 'posthog-js';
 import { BrowserRouter } from 'react-router-dom';
 import * as ReactDOM from 'react-dom/client';
 import App from './app/app';
-import posthog from 'posthog-js';
 
-posthog.init('YOUR_POSTHOG_API_KEY', { 
-  api_host: 'https://app.posthog.com' 
+posthog.init('phc_Fkjn31HYACdgCBuhK3NcyomGNxSDLL2LqTvJV4eRcS9', {
+  api_host: 'https://us.i.posthog.com',
+  person_profiles: 'identified_only',
 });
 
 const root = ReactDOM.createRoot(
@@ -13,9 +13,7 @@ const root = ReactDOM.createRoot(
 );
 
 root.render(
-  <StrictMode>
     <BrowserRouter>
       <App />
     </BrowserRouter>
-  </StrictMode>
 );
