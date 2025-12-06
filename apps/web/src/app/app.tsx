@@ -21,26 +21,52 @@ export function App() {
     });
   };
 
-    const handleSimulateGenerationFailure = () => {
-      posthog.capture('generation_failed', {
-        failure_reason: DUMMY_FAILURE_REASON,
-        input_prompt: DUMMY_PROMPT,
-      });
-    };
+  const handleSimulateGenerationFailure = () => {
+    posthog.capture('generation_failed', {
+      failure_reason: DUMMY_FAILURE_REASON,
+      input_prompt: DUMMY_PROMPT,
+    });
+  };
   
   return (
     <div style={{ padding: '20px' }}>
       <h1>Demo Events</h1>
 
       <button
+        type="button"
         onClick={handleSimulateFeatureUsage}
-        style={{ marginRight: '10px' }}
+        style={{
+          marginRight: '10px',
+          padding: '8px 14px',
+          background: '#0b5fff',
+          color: '#fff',
+          border: 'none',
+          borderRadius: 6,
+          cursor: 'pointer',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+          fontSize: 14,
+          lineHeight: 1,
+        }}
+        aria-label="Simulate Feature Usage"
       >
         Simulate Feature Usage
       </button>
 
       <button
+        type="button"
         onClick={handleSimulateGenerationFailure}
+        style={{
+          marginRight: '10px',
+          padding: '8px 14px',
+          background: '#0b5fff',
+          color: '#fff',
+          border: 'none',
+          borderRadius: 6,
+          cursor: 'pointer',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+          fontSize: 14,
+          lineHeight: 1,
+        }}
       >
         Simulate Generation Failure
       </button>
