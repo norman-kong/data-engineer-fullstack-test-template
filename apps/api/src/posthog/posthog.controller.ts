@@ -2,14 +2,12 @@ import { Body, Controller, Post } from '@nestjs/common';
 import { PosthogEventDto } from './dto/posthog-event.dto';
 import { MarketingService } from './marketing.service';
 import { FailureEventsService } from './failure-events.service';
-import { EmailService } from '../email/email.service';
 
 @Controller('posthog')
 export class PosthogController {
   constructor(
     private readonly marketingService: MarketingService,
-    private readonly failureEventsService: FailureEventsService,
-    private readonly emailService: EmailService,
+    private readonly failureEventsService: FailureEventsService
   ) {}
 
   @Post('webhook')
