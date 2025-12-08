@@ -2,7 +2,7 @@ import { IsString, IsOptional, IsObject } from 'class-validator';
 
 export class PosthogEventDto {
   @IsString()
-  event!: string;
+  event!: string;  // "feature_used" / "generation_failed"
 
   @IsString()
   distinct_id!: string;
