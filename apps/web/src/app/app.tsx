@@ -2,8 +2,8 @@ import posthog from 'posthog-js';
 import { Route, Routes } from 'react-router-dom';
 import { useEffect } from 'react';
 
-const TEST_USER_ID = 'test-user-8';
-const TEST_USER_EMAIL = 'test-user-8@gmail.com';
+const TEST_USER_ID = 'test-user-1';
+const TEST_USER_EMAIL = 'test-user-1@mail.com';
 const DUMMY_PROMPT = 'generate a floorplan for a 2-bedroom apartment';
 const DUMMY_FAILURE_REASON = 'timeout';
 
