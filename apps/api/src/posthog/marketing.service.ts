@@ -1,8 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PosthogEventDto } from './dto/posthog-event.dto';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class MarketingService {
+
+  constructor(private readonly emailService: EmailService) {}
+
   private readonly logger = new Logger(MarketingService.name);
 
   // key: `${distinctId}:${featureName}` -> count
@@ -41,10 +45,8 @@ export class MarketingService {
     if (newCount >= THRESHOLD && !this.emailedKeys.has(key)) {
       this.emailedKeys.add(key);
 
-      // Mock sending email by logging
-      this.logger.log(
-        `MockEmailService: Would send marketing email to distinct_id=${event.distinct_id} for feature='${featureName}' (count=${newCount}).`,
-      );
+      // Mock sending email 
+      await this.emailService.sendMarketingEmail(event.distinct_id, featureName, newCount);
     }
   }
 }
