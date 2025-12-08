@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { PosthogModule } from '../posthog/posthog.module';
 
 @Module({
-  imports: [],
+  imports: [PosthogModule],
   controllers: [AppController],
   providers: [AppService],
 })
