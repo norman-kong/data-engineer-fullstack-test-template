@@ -2,9 +2,9 @@
 
 This repository contains two main apps:
 
-- `apps/web`: React frontend (Nx) that emits analytics events to PostHog.
+- `apps/web`: React frontend that emits analytics events to PostHog.
 - `apps/api`: NestJS backend that consumes PostHog webhooks and implements:
-  - A marketing trigger (“send” a mock email when a feature is used 5 times).
+  - A marketing trigger ("send" a mock email when a feature is used 5 times).
   - A failure-event ingestion path for `generation_failed` events.
 
 The key architectural goal is **separation of concerns**:
@@ -23,11 +23,8 @@ The key architectural goal is **separation of concerns**:
    - Initializes the PostHog JavaScript SDK.
    - Identifies the current user with a hard-coded `distinct_id=test-user-1` and `email=test-user-1@mail.com`. 
    - Exposes two buttons:
-     - **"Simulate Feature Usage"**  
-       Sends a `feature_used` event with:  
-       `feature_name = "demo_feature"`.
-     - **"Simulate Generation Failure"**  
-       Sends a `generation_failed` event with dummy data:  
+     - **"Simulate Feature Usage"**: Sends a `feature_used` event with:  `feature_name = "demo_feature"`.
+     - **"Simulate Generation Failure"**: Sends a `generation_failed` event with: 
        - `failure_reason = "timeout"`  
        - `input_prompt = "generate a floorplan for a 2-bedroom apartment"`.
 
@@ -80,13 +77,13 @@ apps/api/src/app/posthog/
     - Persist counts in a DB/cache. 
     - Call a real `EmailService` that uses SES, SendGrid, etc. 
 - `FailureEventsService`
-  - Handles generation_failed events.
+  - Handles `generation_failed` events.
   - Performs simple sanitization:
     - Whitelisted fields:
-      - failure_reason
-      - input_prompt
-      - distinct_id
-      - timestamp
+      - `failure_reason`
+      - `input_prompt`
+      - `distinct_id`
+      - `timestamp`
   - Truncates very long strings for safety.
   - Stores the event to a local file named `training_data.jsonl`. 
   - In a production system, these events would be written to a durable store (e.g. Postgres, S3, or a data warehouse).
@@ -175,27 +172,29 @@ Clicking the React buttons should now trigger the events, sending them to PostHo
 
 To solve this problem, a natural feature to leverage for this is PostHog's Workflows. They are good at: 
 
-- Triggering on specific events.
+- Triggering on specific events (say, `feature_used`).
 - Branching based on event properties or person properties.
 - Sending notifications, emails, or webhooks.
 
-To identify which users have triggered the `feature_name = demo_feature` event at least 5 times, I opted to use a **dynamic cohort**, which does identify the target users. However, dynamic cohorts are recalculated on a batch schedule (on the order of once every 24 hours), not in real-time. That means:
+To identify which users have triggered the `feature_name = demo_feature` event at least 5 times, I opted to use a **dynamic cohort**, which can identify users based on how many times they performed an action. However, dynamic cohorts are recalculated on a batch schedule (on the order of once every 24 hours), not in real-time, which goes against the desired logic. For example: 
 
-- A user might cross the 5-uses threshold at, say, 10:03.
-- They would not necessarily enter the cohort until the next cohort refresh.
-- The email timing becomes "some time tomorrow" rather than "when they actually hit 5 uses".
+- A user might cross the 5-use threshold at, say, 10:03am.
+- They would not necessarily enter the cohort until the next cohort refresh at midnight. 
+- The email timing now depends on the user attempting `feature_used` again after that refresh (which may never come), rather than "when they actually hit 5 uses".
 
-For a batched lifecycle campaign this is fine, but it does not closely match the assignment's requirement of a real-time email when count > 5.
+This does not closely match the assignment's requirement of a real-time email when count >= 5.
 
-Given the above issue, one might try to avoid using cohorts. However, <b>workflows are event/property-oriented</b>, not count-threshold-oriented. I did not find a clean, no-code way to express the filtering logic purely through the Workflow. In practice, you'd likely need some additional logic to complement the workflow (for example, a small piece of code in a PostHog plugin or a separate service) to maintain per-user count and expose it as a person property. At that point you are back to relying on custom code, which defeats the goal of keeping this trigger purely no-code. 
+Given the above issue, one might try to avoid using cohorts. However, <b>workflows are event/property-oriented</b>, not count-threshold-oriented. I did not find a clean, no-code way to express the filtering logic purely through the Workflow without Cohorts. To replace the Cohort logic that handles the counts per user, you'd likely need some additional logic to complement the workflow (for example, a small piece of code in a PostHog plugin or a separate service) to maintain per-user count and expose it as a person property. At that point you are back to relying on custom code, which defeats the goal of keeping this trigger purely no-code. 
 
 As a last note, using PostHog's email channel requires non-trivial complexity, like domain verification, control over DNS for a custom domain, etc. This email infrastructure is out of scope for this analytics/architecture problem. 
 
 ### Chosen approach: Webhook + backend mock email
 
-Given the above constraints, I chose to use PostHog to forward the `feature_used` events. The backend receives these events through a webhook (`POST /api/posthog/webhook`). The backend also maintains the `MarketingService`, which tracks per-user, per-feature counts in memory (which emulates a DB), and enforces the logic needed for our requirement. 
+Given the above constraints, I chose to use PostHog to forward the `feature_used` events. The backend receives these events through a webhook (`POST /api/posthog/webhook`). As mentioned before, the backend also maintains: 
+  - `MarketingService`, which tracks per-user, per-feature counts in memory (which emulates a DB)
+  - `FailureEventsService`, which sanitizes failure events and writes them to storage. 
 
-This design still supports our priority on decoupling while satisfying our functional requirement. 
+This design still supports our priority on decoupling while satisfying our functional requirements. 
 
 ### Future Work 
 
